@@ -35,16 +35,17 @@ module.exports = {
     },
     imageUpload: async (req, res) => {
         const { user, image } = req.body
-        let newUser = {}
+        let newUser = await userSchema.findByIdAndUpdate(user._id, {$push: {images: image}}, {new: true})
         const stockImg = 'https://icon-library.com/images/anonymous-icon/anonymous-icon-26.jpg'
-        if (user.images.length === 1 && user.images[0] === stockImg) 
-            newUser = await userSchema.findByIdAndUpdate(user._id, {images: [image]}, {new: true})
-        else newUser = await userSchema.findByIdAndUpdate(user._id, {$push: {images: image}}, {new: true})
-        res.send({error: false, status: 'image uploaded successfully', user: newUser})
+        if (newUser.images[0] === stockImg) {
+            newUser.images.shift()
+            await userSchema.findByIdAndUpdate(user._id, {images:newUser.images})
+        }
+        res.send({error:false, status:'Image uploaded successfully', user: newUser})
     },
     users: async (req, res) => {
         const users = await userSchema.find({_id:{$ne:req.body._id}})
-        res.send({users})
+        res.send({error: false, status: 'all users retrieved successfully', users})
     },
     setFilter: async (req, res) => {
         const user = await userSchema.findByIdAndUpdate(req.body.user._id, {filterCity: req.body.city, filterGender: req.body.gender, filterAgeMax: req.body.ageMax}, {new: true})
@@ -60,7 +61,7 @@ module.exports = {
         res.send({error: false, status:'user liked successfully', user})
     },
     getHistory: async (req, res) => {
-        let users = await userSchema.find({_id: req.body.list})
+        const users = await userSchema.find({_id: req.body.list})
         res.send({error: false, status: 'users found', users})
     }
 }
